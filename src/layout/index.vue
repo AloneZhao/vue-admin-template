@@ -13,10 +13,12 @@
 
     <!-- 右边 -->
     <div class="main-container">
+
       <!-- 右上 navbar -->
       <div :class="{'fixed-header':fixedHeader}">
         <navbar />
       </div>
+
       <!-- 右下 -->
       <app-main />
     </div>

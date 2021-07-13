@@ -1,90 +1,78 @@
-import { login, logout, getInfo } from '@/api/user'
-import { getToken, setToken, removeToken } from '@/utils/auth'
-import { resetRouter } from '@/router'
+import { login, getUserInfo, getUserBaseInfo } from '@/api/user'
+import { getToken, setToken, removeToken, setTimeStamp } from '@/utils/auth'
+// import { resetRouter } from '@/router'
+// import { reject, resolve } from 'core-js/fn/promise'
 
-const getDefaultState = () => {
-  return {
-    token: getToken(),
-    name: '',
-    avatar: ''
-  }
+// const getDefaultState = () => {
+//   return {
+//     token: getToken(),
+//     name: '',
+//     avatar: ''
+//   }
+// }
+
+const state = {
+  // 设置 token 为共享状态  初始化的时候先从缓存中读取
+  token: getToken() || null,
+  userInfo: {} // 这里不能设置null  因为会在getters中引用userinfo的变量，如果设置为null，则会引起异常和报错
 }
 
-const state = getDefaultState()
-
 const mutations = {
-  RESET_STATE: (state) => {
-    Object.assign(state, getDefaultState())
+  // 设置token
+  setToken (state, payload) {
+    state.token = payload // 当token改变后，同步到vuex中
+    setToken(payload) // vuex改变 同步到缓存中
   },
-  SET_TOKEN: (state, token) => {
-    state.token = token
+  // 移除token
+  removeToken (state) {
+    state.token = null
+    removeToken()
   },
-  SET_NAME: (state, name) => {
-    state.name = name
+  // 设置用户信息
+  setUserInfo (state, payload) {
+    state.userInfo = { ...payload }
   },
-  SET_AVATAR: (state, avatar) => {
-    state.avatar = avatar
+  // 删除用户信息
+  removeGetUserInfo (state) {
+    state.userInfo = {}
   }
 }
 
 const actions = {
-  // user login
-  login({ commit }, userInfo) {
-    const { username, password } = userInfo
-    return new Promise((resolve, reject) => {
-      login({ username: username.trim(), password: password }).then(response => {
-        const { data } = response
-        commit('SET_TOKEN', data.token)
-        setToken(data.token)
-        resolve()
-      }).catch(error => {
-        reject(error)
-      })
-    })
+  async login ({ commit }, params) {
+    const result = await login(params)
+    commit('setToken', result)
+
+    // 登录成功，拿到token后设置时间戳
+    setTimeStamp()
+
+    // return new Promise((resolve, reject) => {
+    //   login(params)
+    //     .then(res => {
+    //       console.log('成功回调', res)
+    //       commit('setToken', res)
+    //       resolve(res)
+    //     })
+    //     .catch(err => {
+    //       console.log('失败回调', err)
+    //       reject(err)
+    //     })
+    // })
   },
 
-  // get user info
-  getInfo({ commit, state }) {
-    return new Promise((resolve, reject) => {
-      getInfo(state.token).then(response => {
-        const { data } = response
-
-        if (!data) {
-          return reject('Verification failed, please Login again.')
-        }
-
-        const { name, avatar } = data
-
-        commit('SET_NAME', name)
-        commit('SET_AVATAR', avatar)
-        resolve(data)
-      }).catch(error => {
-        reject(error)
-      })
-    })
+  // 获取用户信息
+  async getUserInfo ({ commit }) {
+    const result = await getUserInfo() // 用户信息 权限组 userId
+    const baseInfo = await getUserBaseInfo(result.userId)
+    const obj = { ...result, ...baseInfo }
+    commit('setUserInfo', obj)
+    return result // 为后面权限 做伏笔
   },
 
-  // user logout
-  logout({ commit, state }) {
-    return new Promise((resolve, reject) => {
-      logout(state.token).then(() => {
-        removeToken() // must remove  token  first
-        resetRouter()
-        commit('RESET_STATE')
-        resolve()
-      }).catch(error => {
-        reject(error)
-      })
-    })
-  },
-
-  // remove token
-  resetToken({ commit }) {
-    return new Promise(resolve => {
-      removeToken() // must remove  token  first
-      commit('RESET_STATE')
-      resolve()
-    })
+  // 退出登录
+  logout ({ commit }) {
+    commit('removeToken')
+    commit('removeGetUserInfo')
   }
 }
 
@@ -94,4 +82,3 @@ export default {
   mutations,
   actions
 }
-

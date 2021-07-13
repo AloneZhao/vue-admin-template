@@ -4,13 +4,22 @@ import 'normalize.css/normalize.css' // A modern alternative to CSS resets
 
 import ElementUI from 'element-ui'
 import 'element-ui/lib/theme-chalk/index.css'
-import locale from 'element-ui/lib/locale/lang/en' // lang i18n
+// import locale from 'element-ui/lib/locale/lang/en' // lang i18n
 
 import '@/styles/index.scss' // global css
 
 import App from './App'
 import store from './store'
 import router from './router'
+
+// 自定义指令
+import * as directiveds from '@/directives'
+
+// 过滤器
+import * as filters from '@/filters'
+
+// 全局组件
+import Component from '@/components'
 
 import '@/icons' // icon
 import '@/permission' // 页面权限 control
@@ -29,9 +38,23 @@ import '@/permission' // 页面权限 control
 // }
 
 // set ElementUI lang to EN
-Vue.use(ElementUI, { locale })
+// { locale }
+Vue.use(ElementUI)
 // 如果想要中文版 element-ui，按如下方式声明
 // Vue.use(ElementUI)
+
+// 注册自定义指令
+Object.keys(directiveds).forEach(key => {
+  Vue.directive(key, directiveds[key])
+})
+
+// 注册全局过滤器
+Object.keys(filters).forEach(key => {
+  Vue.filter(key, filters[key])
+})
+
+// 注册全局组件
+Vue.use(Component)
 
 Vue.config.productionTip = false
 

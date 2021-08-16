@@ -22,6 +22,8 @@
       <!-- 右下 -->
       <app-main />
     </div>
+
+    <el-backtop />
   </div>
 </template>
 

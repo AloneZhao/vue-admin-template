@@ -83,3 +83,78 @@ export function uploadExcel (data) {
     data
   })
 }
+
+/**
+ * @description 保存员工信息
+ * @param {Object} data
+ * @returns
+ */
+export function saveEmployees (data) {
+  return request({
+    url: `/sys/user/${data.id}`,
+    method: 'put',
+    data
+  })
+}
+
+/**
+ * @description 获取员工详情
+ * @param {*} id
+ * @returns
+ */
+export function getPersonalDetail (id) {
+  return request({
+    url: `/employees/${id}/personalInfo`,
+    method: 'get'
+  })
+}
+
+/**
+ * @description 更新用户详情
+ * @param {*} data
+ * @returns
+ */
+export function updataPersonalDetail (data) {
+  return request({
+    url: `/employees/${data.userId}/personalInfo`,
+    method: 'put',
+    data
+  })
+}
+
+/**
+ * @description 获取员工岗位信息
+ * @param {*} id
+ * @returns
+ */
+export function getPersonalJob (id) {
+  return request({
+    url: `/employees/${id}/jobs`
+  })
+}
+
+/**
+ * @description 更新员工岗位
+ * @param {*} data
+ * @returns
+ */
+export function updataPersonJob (data) {
+  return request({
+    url: `/employees/${data.userId}/jobs`,
+    method: 'put',
+    data
+  })
+}
+
+/**
+ * @description 员工分配角色
+ * @param {*} data
+ * @returns
+ */
+export function assignRole (data) {
+  return request({
+    url: '/sys/user/assignRoles',
+    method: 'put',
+    data
+  })
+}

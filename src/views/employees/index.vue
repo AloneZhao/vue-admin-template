@@ -13,10 +13,12 @@
           <el-button
             size="small"
             type="warning"
+            @click="goTo()"
           >导入</el-button>
           <el-button
             size="small"
             type="danger"
+            @click="exportData()"
           >导出</el-button>
           <el-button
             size="small"
@@ -52,6 +54,20 @@
             align="center"
             prop="workNumber"
           />
+          <el-table-column
+            label="头像"
+            align="center"
+          >
+            <template slot-scope="{row}">
+              <img
+                slot="reference"
+                v-imagerror="require('@/assets/common/bigUserHeader.png')"
+                :src="row.staffPhoto "
+                style="border-radius: 50%; width: 100px; height: 100px; padding: 10px"
+                @click="showQrCode(row.staffPhoto)"
+              >
+            </template>
+          </el-table-column>
           <el-table-column
             label="聘用形式"
             sortable=""
@@ -98,6 +114,7 @@
               <el-button
                 type="text"
                 size="small"
+                @click="$router.push(`/employees/detail/${row.id}`)"
               >查看</el-button>
               <el-button
                 type="text"
@@ -114,6 +131,7 @@
               <el-button
                 type="text"
                 size="small"
+                @click="editRole(row.id)"
               >角色</el-button>
               <el-button
                 type="text"
@@ -138,20 +156,44 @@
     </div>
 
     <employessInfo :show-dialog.sync="showDialog" />
+    <el-dialog
+      title="二维码"
+      :visible.sync="showCodeDialog"
+    >
+      <el-row
+        type="flex"
+        justify="center"
+      >
+        <canvas ref="myCanvas" />
+      </el-row>
+    </el-dialog>
+    <!-- 角色弹窗 -->
+    <assign-role
+      ref="assignRoleRef"
+      :show-role-dialog.sync="showRoleDialog"
+      :user-id="userId"
+    />
   </div>
 </template>
 
 <script>
 import { getEmployeesList, delEmployessOne } from '@/api/employees'
+import { formatDate } from '@/filters'
 import employessInfo from './employeesInfo.vue'
 import EmployeeEnum from '@/api/enumerate/employees'
+import AssignRole from './components/assign-role.vue'
+import qrCode from 'qrcode'
 export default {
   name: 'EmployeesIndex',
   components: {
-    employessInfo
+    employessInfo,
+    AssignRole
   }, // 员工列表主页
   data() {
     return {
+      showCodeDialog: false,
+      showRoleDialog: false, // 角色弹窗
+      userId: '', // 用户id
       dataList: [],
       showDialog: false,
       loading: true,
@@ -166,6 +208,23 @@ export default {
     this.getEmployeesList()
   },
   methods: {
+    // 打开角色页面
+    async editRole(id) {
+      this.userId = id
+      await this.$refs['assignRoleRef'].getUserInfo(id)
+      this.showRoleDialog = true
+    },
+    showQrCode(url) {
+      if (url) {
+        this.showCodeDialog = true
+        this.$nextTick(() => {
+          qrCode.toCanvas(this.$refs['myCanvas'], url)
+        })
+      } else {
+        console.log(111)
+        this.$message.warning('该用户还没有上传头像')
+      }
+    },
     // 翻页
     handleCurrentChange(val) {
       console.log('val', val)
@@ -176,6 +235,55 @@ export default {
     formatterEmployees(row, column, cellValue, index) {
       const obj = EmployeeEnum.hireType.find(item => item.id === cellValue)
       return obj ? obj.value : '未知'
+    },
+    goTo() {
+      this.$router.push({ name: 'employessUploadExcel' })
+    },
+    formatDataJson(headers, rows) {
+      return rows.map(item => {
+        const arrItem = []
+        Object.keys(headers).map(i => {
+          if (headers[i] === 'timeOfEntry' || headers[i] === 'correctionTime') {
+            item[headers[i]] = formatDate(item[headers[i]])
+          } else if (headers[i] === 'formOfEmployment') {
+            const obj = EmployeeEnum.hireType.find(item => item.id === item[headers[i]])
+            item[headers[i]] = obj ? obj.value : '未知'
+          }
+          arrItem.push(item[headers[i]])
+        })
+        return arrItem
+      })
+    },
+    // 导出
+    exportData() {
+      const headers = {
+        '姓名': 'username',
+        '手机号': 'mobile',
+        '入职日期': 'timeOfEntry',
+        '聘用形式': 'formOfEmployment',
+        '转正日期': 'correctionTime',
+        '工号': 'workNumber',
+        '部门': 'departmentName'
+      }
+      import('@/utils/vendor/Export2Excel').then(async excel => {
+        const { rows } = await getEmployeesList({ page: 1, size: this.page.total })
+        const data = this.formatDataJson(headers, rows)
+        // 将获取到的数据转换成导出需要的数据格式
+
+        /**
+         * excel 是引入的文件导出的对象 利用.方法名调用导出excel方法
+         * @params {Arrary} header 导出数据的表头
+         * @params {[[]]} data 导出的具体数据 一条数据就是一个数组同时必须与表头一一对应
+         * @params {String} filename 导出文件名 (excel-list)
+         * @params {Boolean} autoWidth 单元格是否要自适应宽度
+         * @params {Sting} bookType 导出文件类型 (xlsx, csv, txt, more)
+         */
+        excel.export_json_to_excel({
+          header: Object.keys(headers),
+          data,
+          filename: '员工工资表'
+        })
+      })
     },
     // 获取数据
     async getEmployeesList() {

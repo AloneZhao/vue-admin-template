@@ -20,6 +20,8 @@ import * as filters from '@/filters'
 
 // 全局组件
 import Component from '@/components'
+// 注册全局组件
+Vue.use(Component)
 
 import '@/icons' // icon
 import '@/permission' // 页面权限 control
@@ -52,9 +54,6 @@ Object.keys(directiveds).forEach(key => {
 Object.keys(filters).forEach(key => {
   Vue.filter(key, filters[key])
 })
-
-// 注册全局组件
-Vue.use(Component)
 
 Vue.config.productionTip = false
 

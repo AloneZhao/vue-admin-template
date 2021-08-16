@@ -37,7 +37,9 @@ export default {
 
       await uploadExcel(arrData)
       this.$message.success('导入成功')
+      this.$router.back()
     },
+    // 格式化导入后时间问题
     formatDate(numb, format) {
       const time = new Date((numb - 1) * 24 * 3600000 + 1)
       debugger
